@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"foodControl/internal/domain"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 type IngredientUseCase interface {
 	Create(ctx context.Context, ingredient *domain.Ingredient) error
+	GetById(ctx context.Context, ids uint) (*domain.Ingredient, error)
 	// Update(ctx context.Context, ingredient *domain.Ingredient) error
 	// Delete(ctx context.Context, ingredient *domain.Ingredient) error
 	// GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error)
@@ -27,6 +29,7 @@ func RegisterEndpoints(router *gin.Engine, uc IngredientUseCase) {
 	}
 	ingredient := router.Group("/ingredient")
 	ingredient.POST("/create", handler.Create)
+	ingredient.GET("/:id", handler.GetById)
 }
 
 type IngredientCreate struct {
@@ -62,7 +65,6 @@ func (ih IngredientHandler) Create(c *gin.Context) {
 			})
 			return
 		}
-		fmt.Println("Ошибка при создании ингридиента: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": http.StatusInternalServerError,
 			"msg":    domain.ErrInternal,
@@ -70,4 +72,35 @@ func (ih IngredientHandler) Create(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, ingredient)
+}
+
+func (ih IngredientHandler) GetById(c *gin.Context) {
+	id := c.Param("id")
+	parUintId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		fmt.Println("Ошибка парсинга id ингридиента: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "Не корректный id",
+		})
+		return
+	}
+	uintId := uint(parUintId)
+	ingridint, err := ih.IngredientUseCase.GetById(c.Request.Context(), uintId)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": http.StatusNotFound,
+				"msg":    domain.ErrNotFound.Error(),
+			})
+			return
+		}
+		fmt.Println("Ошибка получения по id ингридиента: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": http.StatusInternalServerError,
+			"msg":    domain.ErrInternal,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, ingridint)
 }

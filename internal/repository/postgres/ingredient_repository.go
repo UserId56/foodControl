@@ -67,3 +67,15 @@ func (ir IngredientRepository) CheckName(ctx context.Context, ingredient *domain
 	}
 	return nil
 }
+
+func (ir IngredientRepository) GetById(ctx context.Context, id uint) (*domain.Ingredient, error) {
+	var gIngredient GormIngredient
+	if err := ir.db.WithContext(ctx).Where("ID = ?", id).First(&gIngredient).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrNotFound
+		}
+		fmt.Println("Ошибка получения из БД: ", err)
+		return nil, domain.ErrInternal
+	}
+	return gIngredient.toDomain(), nil
+}
