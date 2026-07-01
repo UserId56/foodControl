@@ -107,3 +107,18 @@ func (ir IngredientRepository) GetByIds(ctx context.Context, ids []uint) ([]*dom
 
 	return resultIngredient, nil
 }
+
+func (ir IngredientRepository) Delete(ctx context.Context, id uint) error {
+	deleteElement := &GormIngredient{
+		ID: id,
+	}
+	result := ir.db.WithContext(ctx).Delete(deleteElement)
+	if result.Error != nil {
+		fmt.Println("Ошибка получения из БД: ", result.Error)
+		return domain.ErrInternal
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}

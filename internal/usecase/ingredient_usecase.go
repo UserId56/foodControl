@@ -9,7 +9,7 @@ type IngredientRepository interface {
 	Create(ctx context.Context, ingredient *domain.Ingredient) error
 	GetById(ctx context.Context, id uint) (*domain.Ingredient, error)
 	Update(ctx context.Context, ingredient *domain.Ingredient) error
-	// Delete(ctx context.Context, ingredient *domain.Ingredient) error
+	Delete(ctx context.Context, id uint) error
 	GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error)
 }
 
@@ -51,4 +51,11 @@ func (iuc IngredientUseCase) GetByIds(ctx context.Context, ids []uint) ([]*domai
 		return ingridients, err
 	}
 	return ingridients, nil
+}
+
+func (iuc IngredientUseCase) Delete(ctx context.Context, id uint) error {
+	if err := iuc.IngredientRepository.Delete(ctx, id); err != nil {
+		return err
+	}
+	return nil
 }

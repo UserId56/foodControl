@@ -13,10 +13,10 @@ import (
 
 type IngredientUseCase interface {
 	Create(ctx context.Context, ingredient *domain.Ingredient) error
-	GetById(ctx context.Context, ids uint) (*domain.Ingredient, error)
+	GetById(ctx context.Context, id uint) (*domain.Ingredient, error)
 	Update(ctx context.Context, ingredient *domain.Ingredient) error
 	GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error)
-	// Delete(ctx context.Context, ingredient *domain.Ingredient) error
+	Delete(ctx context.Context, id uint) error
 }
 
 type IngredientHandler struct {
@@ -32,6 +32,7 @@ func RegisterEndpoints(router *gin.Engine, uc IngredientUseCase) {
 	ingredient.GET("/:id", handler.GetById)
 	ingredient.POST("/edit", handler.Update)
 	ingredient.POST("/list", handler.GetByIds)
+	ingredient.DELETE("/:id", handler.Delete)
 }
 
 type IngredientCreate struct {
@@ -159,4 +160,33 @@ func (ih IngredientHandler) GetByIds(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, ingridints)
+}
+
+func (ih IngredientHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	parUintId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		fmt.Println("Ошибка парсинга id ингридиента: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "Не корректный id",
+		})
+		return
+	}
+	uintId := uint(parUintId)
+	if err := ih.IngredientUseCase.Delete(c.Request.Context(), uintId); err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": http.StatusNotFound,
+				"msg":    domain.ErrNotFound.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": http.StatusInternalServerError,
+			"msg":    err.Error(),
+		})
+		return
+	}
+	c.Status(http.StatusOK)
 }
