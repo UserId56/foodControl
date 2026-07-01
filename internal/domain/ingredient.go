@@ -14,4 +14,5 @@ var (
 	ErrIngredientAlreadyExists = errors.New("ингредиент с таким именем существует.")
 	ErrCreate                  = errors.New("ошибка создания элемента")
 	ErrNotFound                = errors.New("Элемент не найден")
+	ErrNameDublicate           = errors.New("Ингредиент с таким именем уже существует")
 )
