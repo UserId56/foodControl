@@ -89,3 +89,21 @@ func (ir IngredientRepository) Update(ctx context.Context, ingredient *domain.In
 	*ingredient = *DBIngredient.toDomain()
 	return nil
 }
+
+func (ir IngredientRepository) GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error) {
+	var gIngredients []GormIngredient
+	result := ir.db.WithContext(ctx).Where("ID in (?)", ids).Find(&gIngredients)
+	if result.Error != nil {
+		fmt.Println("Ошибка получения из БД: ", result.Error)
+		return nil, domain.ErrInternal
+	}
+	var resultIngredient []*domain.Ingredient
+	if len(gIngredients) == 0 {
+		return []*domain.Ingredient{}, nil
+	}
+	for _, ingredient := range gIngredients {
+		resultIngredient = append(resultIngredient, ingredient.toDomain())
+	}
+
+	return resultIngredient, nil
+}

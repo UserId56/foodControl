@@ -15,8 +15,8 @@ type IngredientUseCase interface {
 	Create(ctx context.Context, ingredient *domain.Ingredient) error
 	GetById(ctx context.Context, ids uint) (*domain.Ingredient, error)
 	Update(ctx context.Context, ingredient *domain.Ingredient) error
+	GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error)
 	// Delete(ctx context.Context, ingredient *domain.Ingredient) error
-	// GetByIds(ctx context.Context, ids []uint) ([]*domain.Ingredient, error)
 }
 
 type IngredientHandler struct {
@@ -31,6 +31,7 @@ func RegisterEndpoints(router *gin.Engine, uc IngredientUseCase) {
 	ingredient.POST("/create", handler.Create)
 	ingredient.GET("/:id", handler.GetById)
 	ingredient.POST("/edit", handler.Update)
+	ingredient.POST("/list", handler.GetByIds)
 }
 
 type IngredientCreate struct {
@@ -130,4 +131,32 @@ func (ih IngredientHandler) Update(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, req)
+}
+
+type listIds []uint
+
+func (ih IngredientHandler) GetByIds(c *gin.Context) {
+	var result []*domain.Ingredient
+	var list listIds
+	if err := c.ShouldBindJSON(&list); err != nil {
+		fmt.Println("Ошибкеа парсинга тела: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    fmt.Sprintf("Ошибка парсинга тела: %+v", err),
+		})
+		return
+	}
+	ingridints, err := ih.IngredientUseCase.GetByIds(c.Request.Context(), list)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			c.JSON(http.StatusOK, result)
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": http.StatusInternalServerError,
+			"msg":    err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, ingridints)
 }
